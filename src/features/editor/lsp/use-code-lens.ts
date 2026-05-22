@@ -8,6 +8,7 @@ export interface CodeLensItem {
   title: string;
   command?: string;
   arguments?: unknown[];
+  kind?: "http-run";
 }
 
 const DEBOUNCE_MS = 1000;

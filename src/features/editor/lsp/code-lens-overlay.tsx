@@ -67,7 +67,11 @@ const CodeLensOverlay = forwardRef(
     if (visibleGroups.size === 0) return null;
 
     return (
-      <div ref={ref} className="absolute inset-0 overflow-hidden" style={{ zIndex: 4 }}>
+      <div
+        ref={ref}
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        style={{ zIndex: 4 }}
+      >
         {Array.from(visibleGroups.entries()).map(([line, items]) => {
           const top =
             (resolvedTops.get(line) ?? EDITOR_CONSTANTS.EDITOR_PADDING_TOP + line * lineHeight) -
@@ -85,21 +89,42 @@ const CodeLensOverlay = forwardRef(
                 lineHeight: `${lineHeight * 0.8}px`,
               }}
             >
-              {items.map((item, i) => (
-                <button
-                  key={`${item.title}-${i}`}
-                  type="button"
-                  className="mr-2 cursor-pointer border-none bg-transparent p-0 editor-font text-text-lighter/60 hover:text-text"
-                  disabled={!item.command}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    if (item.command) onExecute?.(item);
-                  }}
-                >
-                  {item.title}
-                </button>
-              ))}
+              {items.map((item, i) => {
+                const isHttpRun = item.kind === "http-run";
+
+                return (
+                  <button
+                    key={`${item.title}-${i}`}
+                    type="button"
+                    className={
+                      "pointer-events-auto mr-2 cursor-pointer border-none bg-transparent p-0 align-middle " +
+                      (isHttpRun
+                        ? "text-green-400 hover:text-green-300"
+                        : "editor-font text-text-lighter/60 hover:text-text")
+                    }
+                    disabled={!item.command}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      if (item.command) onExecute?.(item);
+                    }}
+                  >
+                    {isHttpRun ? (
+                      <svg
+                        width={fontSize}
+                        height={fontSize}
+                        viewBox="0 0 12 12"
+                        fill="currentColor"
+                        className="-mt-px inline-block align-middle"
+                      >
+                        <path d="M2 1v10l9-5z" />
+                      </svg>
+                    ) : (
+                      item.title
+                    )}
+                  </button>
+                );
+              })}
             </div>
           );
         })}

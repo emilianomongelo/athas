@@ -3,6 +3,7 @@ import {
   CaretUp,
   Database,
   DownloadSimple,
+  GlobeHemisphereWest,
   ListBullets,
   PuzzlePiece,
   TerminalWindow,
@@ -240,6 +241,27 @@ const Footer = () => {
                 }}
               />
             </div>
+          ),
+        }
+      : null,
+    settings.coreFeatures.httpClient
+      ? {
+          id: "httpClient" as FooterLeadingItemId,
+          label: "HTTP Client",
+          content: (
+            <FooterTabControl
+              tooltip="Toggle HTTP Client"
+              active={uiState.isBottomPaneVisible && uiState.bottomPaneActiveTab === "httpClient"}
+              className={chromeControl()}
+              onClick={() => {
+                uiState.setBottomPaneActiveTab("httpClient");
+                const showingHttpClient =
+                  !uiState.isBottomPaneVisible || uiState.bottomPaneActiveTab !== "httpClient";
+                uiState.setIsBottomPaneVisible(showingHttpClient);
+              }}
+            >
+              <GlobeHemisphereWest weight="duotone" />
+            </FooterTabControl>
           ),
         }
       : null,

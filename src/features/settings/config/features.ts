@@ -11,6 +11,7 @@ import {
   HardDrives as Server,
   TerminalWindow as TerminalIcon,
   UsersThree,
+  GlobeHemisphereWest,
 } from "@phosphor-icons/react";
 import type { CoreFeature, CoreFeaturesState } from "../types/feature";
 
@@ -100,5 +101,12 @@ export const createCoreFeaturesList = (coreFeatures: CoreFeaturesState): CoreFea
     description: "The last used commands appear at the top of the command palette",
     icon: Brain,
     enabled: coreFeatures.persistentCommands,
+  },
+  {
+    id: "httpClient",
+    name: "HTTP Client",
+    description: "Run HTTP requests from .http files with response inspection",
+    icon: GlobeHemisphereWest,
+    enabled: coreFeatures.httpClient,
   },
 ];

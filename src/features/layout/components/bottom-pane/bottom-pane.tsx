@@ -2,6 +2,8 @@ import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import DebuggerView from "@/features/debugger/components/debugger-view";
 import { useBufferStore } from "@/features/editor/stores/buffer-store";
+import HttpClientView from "@/features/http-client/components/http-client-view";
+import { HttpClientEventListener } from "@/features/http-client/components/http-client-event-listener";
 import { BOTTOM_PANE_ID } from "@/features/panes/constants/pane";
 import { usePaneStore } from "@/features/panes/stores/pane-store";
 import { activateBufferInPaneAndSync } from "@/features/panes/utils/pane-activation";
@@ -208,6 +210,9 @@ const BottomPane = () => {
 
       {/* Content Area */}
       <div className="h-full overflow-hidden">
+        {/* Always-mounted listeners */}
+        {settings.coreFeatures.httpClient && <HttpClientEventListener />}
+
         {/* Terminal Container - Always mounted to preserve terminal sessions */}
         {settings.coreFeatures.terminal && (
           <TerminalContainer
@@ -227,6 +232,12 @@ const BottomPane = () => {
         {bottomPaneActiveTab === "buffers" && (
           <div className="h-full">
             {bottomPaneBufferIds.length > 0 ? <BottomBufferPane /> : null}
+          </div>
+        )}
+
+        {settings.coreFeatures.httpClient && bottomPaneActiveTab === "httpClient" && (
+          <div className="h-full">
+            <HttpClientView />
           </div>
         )}
       </div>

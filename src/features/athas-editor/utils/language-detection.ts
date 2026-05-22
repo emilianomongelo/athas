@@ -57,6 +57,7 @@ export function detectLanguageFromPath(filePath: string): string {
     lua: "lua",
     vim: "vim",
     elm: "elm",
+    http: "http",
   };
 
   return languageMap[extension] || "text";

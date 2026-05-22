@@ -97,3 +97,17 @@ languages.setMonarchTokensProvider("ocaml", {
     ],
   },
 });
+
+ensureLanguage("http", [".http", ".rest"], ["HTTP", "http", "rest"]);
+languages.setMonarchTokensProvider("http", {
+  tokenizer: {
+    root: [
+      [/^###.*$/, "comment"],
+      [/^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\b/, "keyword"],
+      [/^https?:\/\/[^\s]+/, "string"],
+      [/^[A-Za-z][A-Za-z0-9-]+:/, "type"],
+      [/\{\{[^}]+\}\}/, "variable"],
+      [/^[ \t]*(\/\/|#).*$/, "comment"],
+    ],
+  },
+});

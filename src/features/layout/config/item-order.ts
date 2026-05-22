@@ -3,6 +3,7 @@ export const HEADER_TRAILING_ITEM_IDS = ["run-actions", "ai-chat", "account"] as
 export const SIDEBAR_ACTIVITY_ITEM_IDS = ["files", "search", "git", "github-prs"] as const;
 export const FOOTER_LEADING_ITEM_IDS = [
   "branch",
+  "httpClient",
   "terminal",
   "debugger",
   "diagnostics",

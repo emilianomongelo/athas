@@ -37,6 +37,7 @@ import type {
   EditorModelPositionResolver,
 } from "../view-model/view-layout";
 import { toMonacoLanguageId } from "../monaco/language";
+import { registerHttpVariableCompletionProvider } from "@/features/http-client/services/http-variable-completion";
 
 interface MonacoBackedEditorProps {
   bufferId?: string;
@@ -837,6 +838,11 @@ export function MonacoBackedEditor({
     viewStateKey,
     wordWrap,
   ]);
+
+  // Register the HTTP variable completion provider once per component mount
+  useEffect(() => {
+    registerHttpVariableCompletionProvider();
+  }, []);
 
   useEffect(() => {
     const editor = editorRef.current;

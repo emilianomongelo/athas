@@ -12,66 +12,58 @@ export function registerHttpVariableCompletionProvider(): void {
   registered = true;
 
   languages.registerCompletionItemProvider("http", {
-    triggerCharacters: ["{", ...Array.from("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")],
+    triggerCharacters: ["{"],
+
     provideCompletionItems: (model, position, _context, _token) => {
-      const textUntilPosition = model.getValueInRange({
-        startLineNumber: position.lineNumber,
-        startColumn: 1,
-        endLineNumber: position.lineNumber,
-        endColumn: position.column,
-      });
+      try {
+        const envState = useEnvironmentStore.getState();
+        const activeEnv = envState.selectedEnvironment;
+        const envVars =
+          activeEnv && envState.environments[activeEnv] ? envState.environments[activeEnv] : null;
 
-      // Find the last `{{` before cursor
-      const lastOpen = textUntilPosition.lastIndexOf("{{");
-      if (lastOpen === -1) return { suggestions: [] };
+        if (!envVars || Object.keys(envVars).length === 0) return { suggestions: [] };
 
-      // Check there's no `}}` between the `{{` and cursor
-      const textAfterOpen = textUntilPosition.slice(lastOpen + 2);
-      if (textAfterOpen.includes("}}")) return { suggestions: [] };
+        // Get text from start of line to cursor
+        const textUntilPosition = model.getValueInRange({
+          startLineNumber: position.lineNumber,
+          startColumn: 1,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column,
+        });
 
-      // Extract what the user has typed so far after `{{`
-      // Remove any leading/trailing spaces but allow partial variable names
-      const typed = textAfterOpen.replace(/^\s+|\s+$/g, "");
+        // Find the last `{{` before cursor
+        const lastOpen = textUntilPosition.lastIndexOf("{{");
+        if (lastOpen === -1) return { suggestions: [] };
 
-      // Get current environment variables
-      const envState = useEnvironmentStore.getState();
-      const activeEnv = envState.selectedEnvironment;
-      const envVars =
-        activeEnv && envState.environments[activeEnv] ? envState.environments[activeEnv] : null;
+        // Check there's no `}}` between the `{{` and cursor
+        const textAfterOpen = textUntilPosition.slice(lastOpen + 2);
+        if (textAfterOpen.includes("}}")) return { suggestions: [] };
 
-      if (!envVars) return { suggestions: [] };
-
-      const varNames = Object.keys(envVars);
-
-      // Filter by typed prefix
-      const filtered = typed
-        ? varNames.filter((name) => name.toLowerCase().includes(typed.toLowerCase()))
-        : varNames;
-
-      if (filtered.length === 0) return { suggestions: [] };
-
-      // Calculate the range from `{{` to current cursor position
-      // Monaco uses 1-based columns
-      const range = {
-        startLineNumber: position.lineNumber,
-        startColumn: lastOpen + 1,
-        endLineNumber: position.lineNumber,
-        endColumn: position.column,
-      };
-
-      const suggestions: languages.CompletionItem[] = filtered.map((varName) => {
-        const value = envVars[varName]!;
-        return {
-          label: varName,
-          kind: languages.CompletionItemKind.Variable,
-          detail: `${envVars[varName]} (${activeEnv})`,
-          documentation: `**${varName}** = \`${value}\`\n\nEnvironment: \`${activeEnv}\``,
-          insertText: `{{${varName}}}`,
-          range,
+        // Range from `{{` start to cursor (Monaco 1-based columns)
+        const range = {
+          startLineNumber: position.lineNumber,
+          startColumn: lastOpen + 1,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column,
         };
-      });
 
-      return { suggestions };
+        // Let Monaco filter by what the user typed after `{{`
+        const suggestions: languages.CompletionItem[] = Object.keys(envVars).map((varName) => {
+          const value = envVars[varName]!;
+          return {
+            label: varName,
+            kind: languages.CompletionItemKind.Variable,
+            detail: `${value} (${activeEnv})`,
+            documentation: `${varName} = ${value} (${activeEnv})`,
+            insertText: `{{${varName}}}`,
+            range,
+          };
+        });
+
+        return { suggestions };
+      } catch {
+        return { suggestions: [] };
+      }
     },
   });
 }

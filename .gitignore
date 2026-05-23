@@ -18,6 +18,9 @@ dist/
 .env
 .env.local
 
+# HTTP client request files
+requests/
+
 # .vscode workspace settings file (keep extensions.json and settings.json for team consistency)
 .vscode/launch.json
 .vscode/tasks.json

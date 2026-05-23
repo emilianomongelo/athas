@@ -12,7 +12,7 @@ export function registerHttpVariableCompletionProvider(): void {
   registered = true;
 
   languages.registerCompletionItemProvider("http", {
-    triggerCharacters: ["{", " ", "."],
+    triggerCharacters: ["{", ...Array.from("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")],
     provideCompletionItems: (model, position, _context, _token) => {
       const textUntilPosition = model.getValueInRange({
         startLineNumber: position.lineNumber,

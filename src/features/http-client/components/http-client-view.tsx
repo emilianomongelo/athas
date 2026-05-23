@@ -4,6 +4,8 @@ import { hasTextContent } from "@/features/panes/types/pane-content";
 import { useSettingsStore } from "@/features/settings/store";
 import { useHttpClientStore } from "../stores/http-client-store";
 import { parseHttpFile } from "../services/http-parser";
+import { substituteVariables } from "../services/environment-service";
+import { useEnvironmentStore } from "../stores/environment-store";
 import type { HttpRequestBlock, HttpResponse } from "../types";
 import { ResponseBodyViewer } from "./response-body-viewer";
 import { ResponseHeadersTable } from "./response-headers-table";
@@ -71,6 +73,13 @@ function RequestList({
   isExecuting: boolean;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const environments = useEnvironmentStore.use.environments();
+  const selectedEnvironment = useEnvironmentStore.use.selectedEnvironment();
+
+  const resolveUrl = useCallback(
+    (url: string) => substituteVariables(url, environments, selectedEnvironment),
+    [environments, selectedEnvironment],
+  );
 
   const handleRun = useCallback(
     async (index: number) => {
@@ -128,7 +137,9 @@ function RequestList({
               </button>
             </div>
 
-            <div className="mt-1 truncate ui-text-xs text-text-lighter">{block.url}</div>
+            <div className="mt-1 truncate ui-text-xs text-text-lighter">
+              {resolveUrl(block.url)}
+            </div>
 
             {hasResponse && <StatusBadge response={responses[responseKey]!} />}
           </button>

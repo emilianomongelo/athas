@@ -19,11 +19,13 @@ export function registerHttpVariableCompletionProvider(): void {
   const disposable = languages.registerCompletionItemProvider("http", {
     triggerCharacters: ["{"],
 
-    provideCompletionItems: (model, position, _context, _token) => {
+    provideCompletionItems: (model, position, context, _token) => {
       console.log("[http-completion] provideCompletionItems called at", {
         line: position.lineNumber,
         col: position.column,
         languageId: model.getLanguageId(),
+        triggerKind: context.triggerKind,
+        triggerCharacter: context.triggerCharacter,
       });
       try {
         const envState = useEnvironmentStore.getState();

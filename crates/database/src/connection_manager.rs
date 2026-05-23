@@ -24,6 +24,8 @@ pub enum DatabasePool {
    Mongo(mongodb::Client),
    #[cfg(feature = "redis")]
    Redis(Box<redis::aio::ConnectionManager>),
+   #[cfg(feature = "snowflake")]
+   Snowflake(crate::providers::snowflake::SnowflakeConnection),
    #[doc(hidden)]
    Unsupported,
 }
@@ -77,7 +79,8 @@ pub async fn connect_database(
       feature = "postgres",
       feature = "mysql",
       feature = "mongodb",
-      feature = "redis"
+      feature = "redis",
+      feature = "snowflake"
    )))]
    {
       let _ = (password, manager);
@@ -88,7 +91,8 @@ pub async fn connect_database(
       feature = "postgres",
       feature = "mysql",
       feature = "mongodb",
-      feature = "redis"
+      feature = "redis",
+      feature = "snowflake"
    ))]
    {
       connect_network_database(config, password, manager).await
@@ -110,7 +114,8 @@ pub async fn test_connection(
       feature = "postgres",
       feature = "mysql",
       feature = "mongodb",
-      feature = "redis"
+      feature = "redis",
+      feature = "snowflake"
    )))]
    {
       let _ = password;
@@ -121,7 +126,8 @@ pub async fn test_connection(
       feature = "postgres",
       feature = "mysql",
       feature = "mongodb",
-      feature = "redis"
+      feature = "redis",
+      feature = "snowflake"
    ))]
    {
       test_network_connection(config, password).await
@@ -132,7 +138,8 @@ pub async fn test_connection(
    feature = "postgres",
    feature = "mysql",
    feature = "mongodb",
-   feature = "redis"
+   feature = "redis",
+   feature = "snowflake"
 ))]
 async fn connect_network_database(
    config: ConnectionConfig,
@@ -140,7 +147,12 @@ async fn connect_network_database(
    manager: &ConnectionManager,
 ) -> Result<ConnectionResult, String> {
    let connection_id = config.id.clone();
-   let conn_str = network_connection_string(&config, password)?;
+
+   let conn_str = if config.db_type != "snowflake" {
+      network_connection_string(&config, password.clone())?
+   } else {
+      String::new()
+   };
 
    match config.db_type.as_str() {
       #[cfg(feature = "postgres")]
@@ -188,6 +200,33 @@ async fn connect_network_database(
             )
             .await;
       }
+      #[cfg(feature = "snowflake")]
+      "snowflake" => {
+         let pass = password.unwrap_or_default();
+         let snowflake_conn = crate::providers::snowflake::SnowflakeConnection::new(
+            config.host.clone(),
+            config.username.clone(),
+            pass,
+            if config.database.is_empty() {
+               None
+            } else {
+               Some(config.database.clone())
+            },
+            None,
+            None,
+            None,
+         )?;
+
+         // Verify the key works by generating a JWT
+         snowflake_conn.generate_jwt()?;
+
+         manager
+            .add_pool(
+               connection_id.clone(),
+               DatabasePool::Snowflake(snowflake_conn),
+            )
+            .await;
+      }
       _ => return Err(format!("Unsupported database type: {}", config.db_type)),
    }
 
@@ -202,13 +241,18 @@ async fn connect_network_database(
    feature = "postgres",
    feature = "mysql",
    feature = "mongodb",
-   feature = "redis"
+   feature = "redis",
+   feature = "snowflake"
 ))]
 async fn test_network_connection(
    config: ConnectionConfig,
    password: Option<String>,
 ) -> Result<ConnectionResult, String> {
-   let conn_str = network_connection_string(&config, password)?;
+   let conn_str = if config.db_type != "snowflake" {
+      network_connection_string(&config, password.clone())?
+   } else {
+      String::new()
+   };
 
    match config.db_type.as_str() {
       #[cfg(feature = "postgres")]
@@ -243,6 +287,26 @@ async fn test_network_connection(
             .await
             .map_err(|e| format!("Connection failed: {}", e))?;
       }
+      #[cfg(feature = "snowflake")]
+      "snowflake" => {
+         let pass = password.unwrap_or_default();
+         let snowflake_conn = crate::providers::snowflake::SnowflakeConnection::new(
+            config.host.clone(),
+            config.username.clone(),
+            pass,
+            if config.database.is_empty() {
+               None
+            } else {
+               Some(config.database.clone())
+            },
+            None,
+            None,
+            None,
+         )?;
+         snowflake_conn
+            .generate_jwt()
+            .map_err(|e| format!("Key-pair authentication failed: {}", e))?;
+      }
       _ => return Err(format!("Unsupported database type: {}", config.db_type)),
    }
 
@@ -257,7 +321,8 @@ async fn test_network_connection(
    feature = "postgres",
    feature = "mysql",
    feature = "mongodb",
-   feature = "redis"
+   feature = "redis",
+   feature = "snowflake"
 ))]
 fn network_connection_string(
    config: &ConnectionConfig,

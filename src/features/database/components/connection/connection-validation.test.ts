@@ -34,6 +34,7 @@ describe("database connection validation", () => {
       "mysql",
       "mongodb",
       "redis",
+      "snowflake",
     ]);
   });
 
@@ -69,6 +70,7 @@ describe("database connection validation", () => {
       "mysql",
       "mongodb",
       "redis",
+      "snowflake",
     ]);
   });
 
@@ -129,6 +131,21 @@ describe("database connection validation", () => {
         filePath: "",
         host: "localhost",
         port: 6379,
+        database: "",
+        connectionString: "",
+      }),
+    ).toBeNull();
+  });
+
+  it("does not require a database name for Snowflake", () => {
+    expect(
+      validateConnectionInput({
+        dbType: "snowflake",
+        isFileBased: false,
+        mode: "form",
+        filePath: "",
+        host: "myaccount",
+        port: 443,
         database: "",
         connectionString: "",
       }),

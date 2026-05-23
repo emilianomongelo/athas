@@ -9,6 +9,7 @@ const DATABASE_TYPES: DatabaseType[] = [
   "mysql",
   "mongodb",
   "redis",
+  "snowflake",
 ];
 
 describe("provider registry", () => {
@@ -46,6 +47,11 @@ describe("provider registry", () => {
       label: "Redis",
       isFileBased: false,
       defaultPort: 6379,
+    });
+    expect(PROVIDER_REGISTRY.snowflake).toMatchObject({
+      label: "Snowflake",
+      isFileBased: false,
+      defaultPort: 443,
     });
   });
 

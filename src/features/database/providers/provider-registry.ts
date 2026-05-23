@@ -71,4 +71,13 @@ export const PROVIDER_REGISTRY: Record<DatabaseType, ProviderConfig> = {
         default: asDatabaseViewer(module.default),
       })),
   },
+  snowflake: {
+    label: "Snowflake",
+    isFileBased: false,
+    defaultPort: 443,
+    viewerComponent: () =>
+      import("./snowflake/snowflake-viewer").then((module) => ({
+        default: asDatabaseViewer(module.default),
+      })),
+  },
 };

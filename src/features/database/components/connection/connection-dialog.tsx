@@ -1,4 +1,5 @@
 import { open } from "@tauri-apps/plugin-dialog";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 import { FolderOpen, PlugsConnected as PlugZap } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { useBufferStore } from "@/features/editor/stores/buffer-store";
@@ -11,6 +12,7 @@ import Input from "@/ui/input";
 import { LoadingIndicator } from "@/ui/loading";
 import Select from "@/ui/select";
 import { Tab, TabsList } from "@/ui/tabs";
+import Textarea from "@/ui/textarea";
 import { normalizeDatabaseError } from "../../lib/database-errors";
 import type { DatabaseType } from "../../models/provider.types";
 import { PROVIDER_REGISTRY } from "../../providers/provider-registry";
@@ -68,6 +70,7 @@ export function ConnectionDialog({ isOpen, onClose }: ConnectionDialogProps) {
 
   const provider = PROVIDER_REGISTRY[dbType];
   const isFileBased = provider.isFileBased;
+  const isSnowflake = dbType === "snowflake";
   const validationError = validateConnectionInput({
     dbType,
     isFileBased,
@@ -337,29 +340,32 @@ export function ConnectionDialog({ isOpen, onClose }: ConnectionDialogProps) {
           ) : (
             <>
               <div className="flex gap-3">
-                <div className="flex-1 space-y-1">
+                <div className={`${isSnowflake ? "w-full" : "flex-1"} space-y-1`}>
                   <label htmlFor="db-conn-host" className="ui-font block ui-text-sm text-text">
-                    Host
+                    {isSnowflake ? "Account" : "Host"}
                   </label>
                   <Input
                     id="db-conn-host"
                     className="w-full"
                     value={host}
                     onChange={(e) => updateConnectionField(setHost, e.target.value)}
+                    placeholder={isSnowflake ? "myorg-myaccount" : undefined}
                   />
                 </div>
-                <div className="w-24 space-y-1">
-                  <label htmlFor="db-conn-port" className="ui-font block ui-text-sm text-text">
-                    Port
-                  </label>
-                  <Input
-                    id="db-conn-port"
-                    type="number"
-                    className="w-full"
-                    value={port}
-                    onChange={(e) => updateConnectionField(setPort, Number(e.target.value))}
-                  />
-                </div>
+                {!isSnowflake && (
+                  <div className="w-24 space-y-1">
+                    <label htmlFor="db-conn-port" className="ui-font block ui-text-sm text-text">
+                      Port
+                    </label>
+                    <Input
+                      id="db-conn-port"
+                      type="number"
+                      className="w-full"
+                      value={port}
+                      onChange={(e) => updateConnectionField(setPort, Number(e.target.value))}
+                    />
+                  </div>
+                )}
               </div>
               {dbType !== "redis" && (
                 <div className="space-y-1">
@@ -386,27 +392,79 @@ export function ConnectionDialog({ isOpen, onClose }: ConnectionDialogProps) {
                     onChange={(e) => updateConnectionField(setUsername, e.target.value)}
                   />
                 </div>
-                <div className="flex-1 space-y-1">
-                  <label htmlFor="db-conn-password" className="ui-font block ui-text-sm text-text">
-                    Password
-                  </label>
-                  <Input
-                    id="db-conn-password"
-                    type="password"
-                    className="w-full"
-                    value={password}
-                    onChange={(e) => updateConnectionField(setPassword, e.target.value)}
-                  />
-                </div>
               </div>
+              {isSnowflake ? (
+                <div className="space-y-1">
+                  <label
+                    htmlFor="db-conn-private-key"
+                    className="ui-font block ui-text-sm text-text"
+                  >
+                    Private Key (PEM)
+                  </label>
+                  <div className="flex gap-2">
+                    <Textarea
+                      id="db-conn-private-key"
+                      className="w-full font-mono"
+                      rows={6}
+                      value={password}
+                      onChange={(e) => updateConnectionField(setPassword, e.target.value)}
+                      placeholder={`-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----`}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="gap-1.5 self-start"
+                      onClick={async () => {
+                        const selected = await open({
+                          multiple: false,
+                          directory: false,
+                          filters: [{ name: "PEM Files", extensions: ["pem", "key"] }],
+                        });
+                        if (selected && typeof selected === "string") {
+                          try {
+                            const content = await readTextFile(selected);
+                            updateConnectionField(setPassword, content);
+                          } catch {
+                            updateConnectionField(setPassword, selected);
+                          }
+                        }
+                      }}
+                      compact
+                    >
+                      <FolderOpen />
+                      Browse
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1 space-y-1">
+                    <label
+                      htmlFor="db-conn-password"
+                      className="ui-font block ui-text-sm text-text"
+                    >
+                      Password
+                    </label>
+                    <Input
+                      id="db-conn-password"
+                      type="password"
+                      className="w-full"
+                      value={password}
+                      onChange={(e) => updateConnectionField(setPassword, e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
               <label htmlFor="db-conn-save-password" className="flex items-center gap-2">
                 <Checkbox
                   id="db-conn-save-password"
                   checked={saveCredential}
                   onChange={(checked) => updateConnectionField(setSaveCredential, checked)}
-                  ariaLabel="Save password securely"
+                  ariaLabel={isSnowflake ? "Save private key securely" : "Save password securely"}
                 />
-                <span className="ui-font text-text-lighter ui-text-xs">Save password securely</span>
+                <span className="ui-font text-text-lighter ui-text-xs">
+                  {isSnowflake ? "Save private key securely" : "Save password securely"}
+                </span>
               </label>
             </>
           )}
@@ -419,7 +477,11 @@ export function ConnectionDialog({ isOpen, onClose }: ConnectionDialogProps) {
           <Input
             id="db-conn-string"
             className="w-full"
-            placeholder={`${dbType}://user:pass@host:port/database`}
+            placeholder={
+              isSnowflake
+                ? "account=myorg-myaccount&user=jdoe&private_key=PEM"
+                : `${dbType}://user:pass@host:port/database`
+            }
             value={connectionString}
             onChange={(e) => updateConnectionField(setConnectionString, e.target.value)}
           />

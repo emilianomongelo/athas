@@ -52,4 +52,11 @@ export interface DatabaseProvider {
   dropTable(tableName: string): Promise<void>;
 }
 
-export type DatabaseType = "sqlite" | "postgres" | "mysql" | "duckdb" | "mongodb" | "redis";
+export type DatabaseType =
+  | "sqlite"
+  | "postgres"
+  | "mysql"
+  | "duckdb"
+  | "mongodb"
+  | "redis"
+  | "snowflake";

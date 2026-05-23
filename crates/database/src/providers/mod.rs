@@ -8,6 +8,8 @@ pub mod mysql;
 pub mod postgres;
 #[cfg(feature = "redis")]
 pub mod redis_db;
+#[cfg(feature = "snowflake")]
+pub mod snowflake;
 #[cfg(feature = "sqlite")]
 pub mod sqlite;
 
@@ -21,5 +23,7 @@ pub use mysql::*;
 pub use postgres::*;
 #[cfg(feature = "redis")]
 pub use redis_db::*;
+#[cfg(feature = "snowflake")]
+pub use snowflake::*;
 #[cfg(feature = "sqlite")]
 pub use sqlite::*;

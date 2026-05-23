@@ -8,6 +8,7 @@ const COMMAND_PROVIDER_PREFIXES: Array<[string, DatabaseType]> = [
   ["mysql", "mysql"],
   ["mongo", "mongodb"],
   ["redis", "redis"],
+  ["snowflake", "snowflake"],
 ];
 
 function commandHasProviderToken(command: string, token: string): boolean {

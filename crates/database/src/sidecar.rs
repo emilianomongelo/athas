@@ -2,7 +2,8 @@
    feature = "postgres",
    feature = "mysql",
    feature = "mongodb",
-   feature = "redis"
+   feature = "redis",
+   feature = "snowflake"
 ))]
 use crate::connection_manager::{ConnectionManager, connect_database};
 #[cfg(feature = "postgres")]
@@ -204,6 +205,14 @@ async fn run_request(request: SidecarRequest) -> Result<Value, String> {
          #[cfg(feature = "redis")]
          run_redis(command, request.payload).await
       }
+      command if command.contains("snowflake") => {
+         #[cfg(not(feature = "snowflake"))]
+         {
+            Err("Snowflake provider support is not enabled".to_string())
+         }
+         #[cfg(feature = "snowflake")]
+         run_snowflake(command, request.payload).await
+      }
       _ => Err(format!(
          "Unsupported {} database command: {}",
          provider_id, command
@@ -226,6 +235,7 @@ fn provider_id_for_command(command: &str) -> Result<Option<&'static str>, String
       ("mysql", "mysql"),
       ("mongo", "mongodb"),
       ("redis", "redis"),
+      ("snowflake", "snowflake"),
    ]
    .into_iter()
    .filter_map(|(token, provider_id)| {
@@ -285,7 +295,8 @@ fn read_optional_field<T: DeserializeOwned>(
    feature = "postgres",
    feature = "mysql",
    feature = "mongodb",
-   feature = "redis"
+   feature = "redis",
+   feature = "snowflake"
 ))]
 async fn manager_for_connection(payload: &Value) -> Result<ConnectionManager, String> {
    let config: ConnectionConfig = read_field(payload, &["connectionConfig", "connection_config"])?;
@@ -770,6 +781,74 @@ async fn run_redis(command: &str, payload: Value) -> Result<Value, String> {
       ),
       "redis_get_info" => serde_json::to_value(redis_get_info(connection_id, &manager).await?),
       _ => return Err(format!("Unsupported Redis command: {}", command)),
+   };
+   value.map_err(|e| e.to_string())
+}
+
+#[cfg(feature = "snowflake")]
+async fn run_snowflake(command: &str, payload: Value) -> Result<Value, String> {
+   let connection_id: String = read_field(&payload, &["connectionId", "connection_id"])?;
+   let manager = manager_for_connection(&payload).await?;
+   let value = match command {
+      "get_snowflake_tables" => {
+         serde_json::to_value(get_snowflake_tables(connection_id, &manager).await?)
+      }
+      "query_snowflake" => serde_json::to_value(
+         query_snowflake(connection_id, read_field(&payload, &["query"])?, &manager).await?,
+      ),
+      "query_snowflake_filtered" => serde_json::to_value(
+         query_snowflake_filtered(connection_id, read_field(&payload, &["params"])?, &manager)
+            .await?,
+      ),
+      "execute_snowflake" => serde_json::to_value(
+         execute_snowflake(
+            connection_id,
+            read_field(&payload, &["statement"])?,
+            &manager,
+         )
+         .await?,
+      ),
+      "get_snowflake_table_schema" => serde_json::to_value(
+         get_snowflake_table_schema(connection_id, read_field(&payload, &["table"])?, &manager)
+            .await?,
+      ),
+      "get_snowflake_foreign_keys" => serde_json::to_value(
+         get_snowflake_foreign_keys(connection_id, read_field(&payload, &["table"])?, &manager)
+            .await?,
+      ),
+      "insert_snowflake_row" => serde_json::to_value(
+         insert_snowflake_row(
+            connection_id,
+            read_field(&payload, &["table"])?,
+            read_field(&payload, &["columns"])?,
+            read_field(&payload, &["values"])?,
+            &manager,
+         )
+         .await?,
+      ),
+      "update_snowflake_row" => serde_json::to_value(
+         update_snowflake_row(
+            connection_id,
+            read_field(&payload, &["table"])?,
+            read_field(&payload, &["setColumns", "set_columns"])?,
+            read_field(&payload, &["setValues", "set_values"])?,
+            read_field(&payload, &["whereColumn", "where_column"])?,
+            read_field(&payload, &["whereValue", "where_value"])?,
+            &manager,
+         )
+         .await?,
+      ),
+      "delete_snowflake_row" => serde_json::to_value(
+         delete_snowflake_row(
+            connection_id,
+            read_field(&payload, &["table"])?,
+            read_field(&payload, &["whereColumn", "where_column"])?,
+            read_field(&payload, &["whereValue", "where_value"])?,
+            &manager,
+         )
+         .await?,
+      ),
+      _ => return Err(format!("Unsupported Snowflake command: {}", command)),
    };
    value.map_err(|e| e.to_string())
 }

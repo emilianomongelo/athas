@@ -131,10 +131,31 @@ const PROVIDER_DEFINITIONS: Array<{
       },
     },
   },
+  {
+    extensionId: "athas.database.snowflake",
+    packageName: "snowflake",
+    name: "Snowflake",
+    description: "Snowflake connection, schema, and query provider with key-pair authentication.",
+    provider: {
+      id: "snowflake",
+      label: "Snowflake",
+      isFileBased: false,
+      protocolVersion: 1,
+      defaultPort: 443,
+      sidecar: {
+        "darwin-arm64": "bin/athas-db-snowflake",
+        "darwin-x64": "bin/athas-db-snowflake",
+        "linux-arm64": "bin/athas-db-snowflake",
+        "linux-x64": "bin/athas-db-snowflake",
+        "win32-x64": "bin/athas-db-snowflake.exe",
+      },
+    },
+  },
 ];
 
 export function getDatabaseProviderExtensions(): ExtensionManifest[] {
-  return PROVIDER_DEFINITIONS.filter(({ provider }) => provider.id === "sqlite").map(
+  const builtInProviderIds = new Set(["sqlite", "snowflake"]);
+  return PROVIDER_DEFINITIONS.filter(({ provider }) => builtInProviderIds.has(provider.id)).map(
     ({ extensionId, name, description, provider }) => ({
       id: extensionId,
       name,

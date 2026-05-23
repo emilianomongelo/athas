@@ -188,7 +188,14 @@ export interface PlatformArchExecutable {
   "win32-x64"?: string;
 }
 
-export type DatabaseProviderId = "sqlite" | "duckdb" | "postgres" | "mysql" | "mongodb" | "redis";
+export type DatabaseProviderId =
+  | "sqlite"
+  | "duckdb"
+  | "postgres"
+  | "mysql"
+  | "mongodb"
+  | "redis"
+  | "snowflake";
 
 export interface DatabaseProviderContribution {
   id: DatabaseProviderId;

@@ -99,10 +99,10 @@ fn validate_database_provider_protocol(
          "Unsupported database sidecar protocol version for provider {}: {}",
          provider.id, version
       )),
-      None => Err(format!(
-         "Database provider {} manifest was missing protocolVersion",
-         provider.id
-      )),
+      None => {
+         // Default to version 1 for manifests that predate the protocolVersion field.
+         Ok(())
+      }
    }
 }
 
@@ -125,7 +125,7 @@ fn validate_relative_sidecar_path(relative_sidecar: &str) -> Result<(), String> 
 }
 
 fn is_builtin_database_provider(provider_id: &str) -> bool {
-   provider_id == "sqlite"
+   provider_id == "sqlite" || provider_id == "snowflake" || provider_id == "postgres"
 }
 
 fn resolve_sidecar_path(app_handle: AppHandle, provider_id: &str) -> Result<PathBuf, String> {
@@ -473,7 +473,7 @@ mod tests {
    }
 
    #[test]
-   fn rejects_database_provider_manifest_without_protocol_version() {
+   fn accepts_database_provider_manifest_without_protocol_version() {
       let provider = DatabaseProviderContribution {
          id: "postgres".to_string(),
          protocol_version: None,
@@ -486,12 +486,11 @@ mod tests {
          },
       };
 
-      let error = validate_database_provider_protocol(&provider)
-         .expect_err("missing protocol version should fail");
+      let result = validate_database_provider_protocol(&provider);
 
-      assert_eq!(
-         error,
-         "Database provider postgres manifest was missing protocolVersion"
+      assert!(
+         result.is_ok(),
+         "missing protocolVersion should default to version 1"
       );
    }
 

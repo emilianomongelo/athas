@@ -10,6 +10,7 @@ const DATABASE_PROVIDER_IDS = [
   "mysql",
   "mongodb",
   "redis",
+  "snowflake",
 ] as const satisfies readonly DatabaseProviderId[];
 
 describe("database provider extension manifests", () => {

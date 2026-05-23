@@ -7,6 +7,7 @@ const CONNECTION_DB_TYPES: DatabaseType[] = [
   "mysql",
   "mongodb",
   "redis",
+  "snowflake",
 ];
 
 export interface DatabaseExtensionAvailability {
@@ -48,7 +49,7 @@ export function validateConnectionInput(input: ConnectionValidationInput): strin
     return "Enter a valid port";
   }
 
-  if (input.dbType !== "redis" && !input.database.trim()) {
+  if (input.dbType !== "redis" && input.dbType !== "snowflake" && !input.database.trim()) {
     return "Enter a database name";
   }
 

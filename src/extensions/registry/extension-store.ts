@@ -33,10 +33,14 @@ import {
   recordExtensionUpdateCheck,
 } from "@/features/telemetry/services/telemetry";
 
+const BUILT_IN_DATABASE_PROVIDERS = new Set(["sqlite", "snowflake"]);
+
 function isBuiltInDatabaseExtension(manifest: ExtensionManifest): boolean {
   return (
-    manifest.databaseProviders?.some((provider) => provider.id === "sqlite") ||
-    manifest.contributes?.databaseProviders?.some((provider) => provider.id === "sqlite") ||
+    manifest.databaseProviders?.some((provider) => BUILT_IN_DATABASE_PROVIDERS.has(provider.id)) ||
+    manifest.contributes?.databaseProviders?.some((provider) =>
+      BUILT_IN_DATABASE_PROVIDERS.has(provider.id),
+    ) ||
     false
   );
 }

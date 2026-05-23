@@ -35,6 +35,7 @@ import "monaco-editor/esm/vs/language/css/monaco.contribution";
 import "monaco-editor/esm/vs/language/html/monaco.contribution";
 import "monaco-editor/esm/vs/language/json/monaco.contribution";
 import "monaco-editor/esm/vs/language/typescript/monaco.contribution";
+import { registerHttpVariableCompletionProvider } from "@/features/http-client/services/http-variable-completion";
 
 function ensureLanguage(id: string, extensions: string[], aliases: string[]) {
   if (languages.getLanguages().some((language) => language.id === id)) return;
@@ -111,3 +112,6 @@ languages.setMonarchTokensProvider("http", {
     ],
   },
 });
+
+// Register variable completion provider for .http files
+registerHttpVariableCompletionProvider();

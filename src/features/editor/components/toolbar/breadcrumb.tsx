@@ -11,6 +11,7 @@ import { ExtensionToolbarAction } from "@/extensions/ui/components/extension-too
 import { useSettingsStore } from "@/features/settings/store";
 import { Button } from "@/ui/button";
 import { FilePathBreadcrumb } from "./file-path-breadcrumb";
+import { EnvironmentSelector } from "@/features/http-client/components/environment-selector";
 
 export interface BreadcrumbProps {
   bufferId?: string;
@@ -191,6 +192,7 @@ export default function Breadcrumb({
           {extraLeftContent}
         </div>
         <div className="flex items-center gap-1">
+          <EnvironmentSelector filePath={filePath} />
           {defaultActions}
           {defaultActions && rightContent ? <div className="mx-1 h-3.5 w-px bg-border/70" /> : null}
           {rightContent}

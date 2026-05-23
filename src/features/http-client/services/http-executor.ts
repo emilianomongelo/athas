@@ -1,14 +1,27 @@
 import type { HttpRequestBlock, HttpResponse } from "../types";
+import { useEnvironmentStore } from "../stores/environment-store";
+import { substituteVariables } from "./environment-service";
 
 export async function executeHttpRequest(request: HttpRequestBlock): Promise<HttpResponse> {
   const startTime = performance.now();
 
+  // Substitute variables using the current environment
+  const state = useEnvironmentStore.getState();
+  const { environments, selectedEnvironment } = state;
+
+  const resolvedUrl = substituteVariables(request.url, environments, selectedEnvironment);
+  const resolvedHeaders: Record<string, string> = {};
+  for (const [key, value] of Object.entries(request.headers)) {
+    resolvedHeaders[key] = substituteVariables(value, environments, selectedEnvironment);
+  }
+  const resolvedBody = substituteVariables(request.body, environments, selectedEnvironment);
+
   const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
 
-  const headers = new Headers(request.headers);
-  const requestBody = request.body || undefined;
+  const headers = new Headers(resolvedHeaders);
+  const requestBody = resolvedBody || undefined;
 
-  const response = await tauriFetch(request.url, {
+  const response = await tauriFetch(resolvedUrl, {
     method: request.method,
     headers,
     body: requestBody || undefined,
@@ -32,8 +45,8 @@ export async function executeHttpRequest(request: HttpRequestBlock): Promise<Htt
     contentType,
     timingMs,
     requestMethod: request.method,
-    requestUrl: request.url,
-    requestHeaders: request.headers,
-    requestBody: request.body,
+    requestUrl: resolvedUrl,
+    requestHeaders: resolvedHeaders,
+    requestBody: resolvedBody,
   };
 }

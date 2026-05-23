@@ -42,6 +42,7 @@ import { useCodeLens } from "../lsp/use-code-lens";
 import { useInlayHints } from "../lsp/use-inlay-hints";
 import { useRename } from "../lsp/use-rename";
 import { useSemanticTokens } from "../lsp/use-semantic-tokens";
+import { useHttpClientLenses } from "@/features/http-client/hooks/use-http-client-lenses";
 import { MarkdownPreview } from "../markdown/markdown-preview";
 import type { Position, Range } from "../types/editor";
 import { ScrollDebugOverlay } from "./debug/scroll-debug-overlay";
@@ -119,6 +120,7 @@ const CodeEditor = ({
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const searchRunIdRef = useRef(0);
   const codeLensRef = useRef<HTMLDivElement>(null);
+  const httpLensRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLDivElement>(null);
   const valueRef = useRef("");
   const lspScrollRafRef = useRef<number | null>(null);
@@ -280,6 +282,11 @@ const CodeEditor = ({
     enableRichEditorServices,
   );
 
+  const httpLenses = useHttpClientLenses(
+    filePath,
+    settings.coreFeatures.httpClient && enableInteractiveServices,
+  );
+
   const handleCodeLensExecute = useCallback(
     (lens: { title: string; command?: string; arguments?: unknown[] }) => {
       if (!filePath || !lens.command) return;
@@ -291,6 +298,22 @@ const CodeEditor = ({
       });
     },
     [filePath, lspClient],
+  );
+
+  const handleHttpLensExecute = useCallback(
+    (lens: { title: string; command?: string; arguments?: unknown[] }) => {
+      if (!filePath || !lens.command || lens.command !== "http-client.run") return;
+
+      const blockIndex = lens.arguments?.[0] as number | undefined;
+      if (blockIndex === undefined) return;
+
+      window.dispatchEvent(
+        new CustomEvent("http-client-run", {
+          detail: { filePath, blockIndex },
+        }),
+      );
+    },
+    [filePath],
   );
 
   const updateLspVisibleLineRange = useCallback(
@@ -314,7 +337,7 @@ const CodeEditor = ({
   // Sync LSP overlay containers with textarea scroll via RAF (matches highlight layer timing)
   const syncLspOverlayTransform = useCallback((scrollTop: number, scrollLeft: number) => {
     const transform = `translate(-${scrollLeft}px, -${scrollTop}px)`;
-    for (const ref of [codeLensRef, renameInputRef]) {
+    for (const ref of [codeLensRef, httpLensRef, renameInputRef]) {
       if (ref.current) {
         ref.current.style.transform = transform;
       }
@@ -529,6 +552,20 @@ const CodeEditor = ({
               scrollTop={editorRef.current?.querySelector("textarea")?.scrollTop ?? 0}
               viewportHeight={editorRef.current?.clientHeight ?? 600}
               onExecute={handleCodeLensExecute}
+              resolveModelPosition={resolveModelPosition}
+            />
+          )}
+
+          {/* HTTP Client Run Lenses */}
+          {enableInteractiveServices && httpLenses.length > 0 && (
+            <CodeLensOverlay
+              ref={httpLensRef}
+              lenses={httpLenses}
+              fontSize={zoomedFontSize}
+              lineHeight={zoomedLineHeight}
+              scrollTop={editorRef.current?.querySelector("textarea")?.scrollTop ?? 0}
+              viewportHeight={editorRef.current?.clientHeight ?? 600}
+              onExecute={handleHttpLensExecute}
               resolveModelPosition={resolveModelPosition}
             />
           )}

@@ -37,6 +37,7 @@ import type {
   EditorModelPositionResolver,
 } from "../view-model/view-layout";
 import { toMonacoLanguageId } from "../monaco/language";
+import { registerHttpVariableCompletionProvider } from "@/features/http-client/services/http-variable-completion";
 
 interface MonacoBackedEditorProps {
   bufferId?: string;
@@ -610,7 +611,7 @@ export function MonacoBackedEditor({
       tabSize,
       insertSpaces: true,
       readOnly: readOnly || isPreviewMode,
-      domReadOnly: readOnly || isPreviewMode,
+      domReadOnly: readOnly,
       minimap: { enabled: minimapEnabled },
       scrollBeyondLastLine: false,
       lineNumbers: lineNumbers ? lineNumberFormatter : "off",
@@ -838,6 +839,11 @@ export function MonacoBackedEditor({
     wordWrap,
   ]);
 
+  // Register the HTTP variable completion provider once per component mount
+  useEffect(() => {
+    registerHttpVariableCompletionProvider();
+  }, []);
+
   useEffect(() => {
     const editor = editorRef.current;
     const model = modelRef.current;
@@ -890,7 +896,7 @@ export function MonacoBackedEditor({
       lineHeight,
       tabSize,
       readOnly: readOnly || isPreviewMode,
-      domReadOnly: readOnly || isPreviewMode,
+      domReadOnly: readOnly,
       lineNumbers: lineNumbers ? lineNumberFormatter : "off",
       minimap: { enabled: minimapEnabled },
       renderWhitespace: renderWhitespace === "none" ? "none" : renderWhitespace,

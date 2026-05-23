@@ -3,6 +3,7 @@ import {
   CaretUp,
   Database,
   DownloadSimple,
+  GlobeHemisphereWest,
   ListBullets,
   PuzzlePiece,
   TerminalWindow,
@@ -430,7 +431,28 @@ const Footer = () => {
     ) as FooterTrailingItemId[];
   }, [settings.footerTrailingItemsOrder]);
 
-  const footerTrailingItems: Array<FooterItem<FooterTrailingItemId>> = [
+  const footerTrailingItems: Array<FooterItem<FooterTrailingItemId> | null> = [
+    settings.coreFeatures.httpClient
+      ? {
+          id: "httpClient" as const,
+          label: "HTTP Client",
+          content: (
+            <FooterTabControl
+              tooltip="Toggle HTTP Client"
+              active={uiState.isBottomPaneVisible && uiState.bottomPaneActiveTab === "httpClient"}
+              className={chromeControl()}
+              onClick={() => {
+                uiState.setBottomPaneActiveTab("httpClient");
+                const showingHttpClient =
+                  !uiState.isBottomPaneVisible || uiState.bottomPaneActiveTab !== "httpClient";
+                uiState.setIsBottomPaneVisible(showingHttpClient);
+              }}
+            >
+              <GlobeHemisphereWest weight="duotone" />
+            </FooterTabControl>
+          ),
+        }
+      : null,
     ...(shouldShowOutline
       ? [
           {
@@ -507,7 +529,12 @@ const Footer = () => {
       </div>
 
       <div className="ui-font ui-text-sm flex items-center gap-1 text-text-lighter">
-        {orderFooterItems(footerTrailingItems, footerTrailingOrder).map((item) => (
+        {orderFooterItems(
+          footerTrailingItems.filter(
+            (item): item is FooterItem<FooterTrailingItemId> => item !== null,
+          ),
+          footerTrailingOrder,
+        ).map((item) => (
           <div key={item.id} className={chromeItemWrapper()}>
             {item.content}
           </div>

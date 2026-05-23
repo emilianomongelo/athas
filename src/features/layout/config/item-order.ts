@@ -10,6 +10,7 @@ export const FOOTER_LEADING_ITEM_IDS = [
   "updates",
 ] as const;
 export const FOOTER_TRAILING_ITEM_IDS = [
+  "httpClient",
   "outline",
   "databases",
   "collaboration",
@@ -44,8 +45,50 @@ export function normalizeItemOrder<T extends string>(
   }
 
   for (const id of defaultOrder) {
-    if (!seen.has(id)) {
-      normalized.push(id);
+    if (seen.has(id)) continue;
+
+    let insertAt = 0;
+    for (let i = normalized.length - 1; i >= 0; i--) {
+      const existingIdx = defaultOrder.indexOf(normalized[i]);
+      const newIdx = defaultOrder.indexOf(id);
+      if (existingIdx >= 0 && existingIdx < newIdx) {
+        insertAt = i + 1;
+        break;
+      }
+    }
+
+    normalized.splice(insertAt, 0, id);
+    seen.add(id);
+  }
+
+  // Fix items that were appended at the end by an older version of the
+  // algorithm: if the last item has a lower default index than every item
+  // before it, the item was likely appended and belongs at its default
+  // position instead of at the tail.
+  if (normalized.length > 1) {
+    const lastId = normalized[normalized.length - 1];
+    const lastDefaultIdx = defaultOrder.indexOf(lastId);
+    if (lastDefaultIdx >= 0) {
+      let allBeforeHaveHigherIdx = true;
+      for (let i = 0; i < normalized.length - 1; i++) {
+        const idx = defaultOrder.indexOf(normalized[i]);
+        if (idx >= 0 && idx <= lastDefaultIdx) {
+          allBeforeHaveHigherIdx = false;
+          break;
+        }
+      }
+      if (allBeforeHaveHigherIdx) {
+        normalized.pop();
+        let insertAt = 0;
+        for (let i = normalized.length - 1; i >= 0; i--) {
+          const idx = defaultOrder.indexOf(normalized[i]);
+          if (idx >= 0 && idx < lastDefaultIdx) {
+            insertAt = i + 1;
+            break;
+          }
+        }
+        normalized.splice(insertAt, 0, lastId);
+      }
     }
   }
 

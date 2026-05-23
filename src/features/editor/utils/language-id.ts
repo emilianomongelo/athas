@@ -72,6 +72,8 @@ const EXTENSION_TO_LANGUAGE: Record<string, string> = {
   elm: "elm",
   graphql: "graphql",
   gql: "graphql",
+  http: "http",
+  rest: "http",
   ex: "elixir",
   exs: "elixir",
   ml: "ocaml",
